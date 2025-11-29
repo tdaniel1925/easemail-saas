@@ -40,15 +40,64 @@ export async function getTenant(tenantId: string) {
   return tenant;
 }
 
-// Helper to get tenant with Nylas connection
-export async function getTenantWithGrant(tenantId: string) {
+// Helper to get an account with Nylas grant
+// Supports: accountId (specific), or uses primary/first active account
+export async function getAccountWithGrant(tenantId: string, accountId?: string) {
   const tenant = await getTenant(tenantId);
 
-  if (!tenant.nylasGrantId) {
-    throw new Error('Email not connected. Please connect your email account first.');
+  let account;
+
+  if (accountId) {
+    // Get specific account
+    account = await db.account.findFirst({
+      where: { id: accountId, tenantId: tenant.id, isActive: true },
+    });
+    if (!account) {
+      throw new Error(`Account not found: ${accountId}`);
+    }
+  } else {
+    // Get primary account, or first active account
+    account = await db.account.findFirst({
+      where: { tenantId: tenant.id, isActive: true },
+      orderBy: [
+        { isPrimary: 'desc' },
+        { createdAt: 'asc' },
+      ],
+    });
   }
 
-  return tenant;
+  // Fall back to legacy tenant grant if no accounts
+  if (!account) {
+    if (tenant.nylasGrantId) {
+      // Return a pseudo-account from legacy tenant data
+      return {
+        id: 'legacy',
+        tenantId: tenant.id,
+        email: tenant.connectedEmail || 'unknown',
+        provider: tenant.provider || 'unknown',
+        nylasGrantId: tenant.nylasGrantId,
+        isActive: true,
+        isPrimary: true,
+        tenant,
+      };
+    }
+    throw new Error('No email account connected. Please connect your email first.');
+  }
+
+  return { ...account, tenant };
+}
+
+// Legacy helper - uses primary account or legacy tenant grant
+export async function getTenantWithGrant(tenantId: string) {
+  const account = await getAccountWithGrant(tenantId);
+
+  // Return tenant-like object with nylasGrantId for backward compatibility
+  return {
+    ...account.tenant,
+    nylasGrantId: account.nylasGrantId,
+    connectedEmail: account.email,
+    provider: account.provider,
+  };
 }
 
 // Helper to log activity

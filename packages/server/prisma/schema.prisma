@@ -20,7 +20,7 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Nylas connection
+  // Legacy fields (kept for backward compatibility during migration)
   nylasGrantId   String?  @unique
   emailConnected Boolean  @default(false)
   connectedEmail String?
@@ -28,8 +28,30 @@ model Tenant {
   connectedAt    DateTime?
 
   // Relations
+  accounts  Account[]
   syncState SyncState?
   logs      ActivityLog[]
+}
+
+// ============================================
+// ACCOUNTS (Multiple email accounts per tenant)
+// ============================================
+
+model Account {
+  id           String   @id @default(cuid())
+  tenantId     String
+  email        String
+  provider     String   // "google", "microsoft", "yahoo", etc.
+  nylasGrantId String   @unique
+  isActive     Boolean  @default(true)
+  isPrimary    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@index([tenantId, isActive])
 }
 
 // ============================================
