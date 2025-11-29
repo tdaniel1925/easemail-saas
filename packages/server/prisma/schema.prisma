@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// TENANTS (Your SaaS customers)
+// ============================================
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique // "acme-corp" - used in API calls
+  isActive  Boolean  @default(true)
+  plan      String   @default("free") // "free", "pro", "enterprise"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Nylas connection
+  nylasGrantId   String?  @unique
+  emailConnected Boolean  @default(false)
+  connectedEmail String?
+  provider       String?  // "google", "microsoft", "icloud", etc.
+  connectedAt    DateTime?
+
+  // Relations
+  syncState SyncState?
+  logs      ActivityLog[]
+}
+
+// ============================================
+// SYNC STATE
+// ============================================
+
+model SyncState {
+  id           String    @id @default(cuid())
+  tenantId     String    @unique
+  lastSyncAt   DateTime?
+  emailCursor  String?   // Nylas delta cursor for emails
+  calendarCursor String? // Nylas delta cursor for calendar
+  contactsCursor String? // Nylas delta cursor for contacts
+  isSyncing    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// ACTIVITY LOGS
+// ============================================
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  action    String   // "list_emails", "send_email", "create_event", etc.
+  status    String   // "success", "error"
+  input     Json?
+  output    Json?
+  error     String?
+  duration  Int?     // ms
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([action])
+}

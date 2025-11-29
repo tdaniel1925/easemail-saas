@@ -1,0 +1,21 @@
+{
+  "name": "easemail-saas",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "dev:server": "npm run dev --workspace=@easemail/server",
+    "dev:web": "npm run dev --workspace=@easemail/web",
+    "db:generate": "npm run db:generate --workspace=@easemail/server",
+    "db:push": "npm run db:push --workspace=@easemail/server",
+    "db:studio": "npm run db:studio --workspace=@easemail/server",
+    "db:seed": "npm run db:seed --workspace=@easemail/server"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  }
+}
