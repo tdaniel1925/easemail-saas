@@ -12,7 +12,7 @@ export async function listCalendars(params: { tenant_id: string }) {
     return {
       success: true,
       data: {
-        calendars: calendars.map(c => ({
+        calendars: calendars.map((c: any) => ({
           id: c.id,
           name: c.name,
           description: c.description,
@@ -47,7 +47,7 @@ export async function listEvents(params: {
       limit: params.limit || 50,
     });
 
-    const events = response.data.map(e => ({
+    const events = response.data.map((e: any) => ({
       id: e.id,
       calendarId: e.calendarId,
       title: e.title,
@@ -55,7 +55,7 @@ export async function listEvents(params: {
       location: e.location,
       status: e.status,
       when: e.when,
-      participants: e.participants?.map(p => ({
+      participants: e.participants?.map((p: any) => ({
         email: p.email,
         name: p.name,
         status: p.status,
@@ -98,7 +98,7 @@ export async function getEvent(params: {
         location: event.location,
         status: event.status,
         when: event.when,
-        participants: event.participants?.map(p => ({
+        participants: event.participants?.map((p: any) => ({
           email: p.email,
           name: p.name,
           status: p.status,
@@ -200,14 +200,14 @@ export async function checkAvailability(params: {
     });
 
     // Build busy times
-    const busyTimes = response.data.map(e => {
+    const busyTimes = response.data.map((e: any) => {
       const when = e.when as { startTime?: number; endTime?: number };
       return {
         start: when.startTime ? new Date(when.startTime * 1000).toISOString() : null,
         end: when.endTime ? new Date(when.endTime * 1000).toISOString() : null,
         title: e.title,
       };
-    }).filter(t => t.start && t.end);
+    }).filter((t: any) => t.start && t.end);
 
     return {
       success: true,

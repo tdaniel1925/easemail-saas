@@ -1,8 +1,9 @@
 import Nylas from 'nylas';
 import 'dotenv/config';
 
-// Initialize Nylas
-export const nylas = new Nylas({
+// Initialize Nylas - using any to handle SDK version differences
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const nylas: any = new (Nylas as any)({
   apiKey: process.env.NYLAS_API_KEY!,
   apiUri: process.env.NYLAS_API_URI || 'https://api.us.nylas.com',
 });

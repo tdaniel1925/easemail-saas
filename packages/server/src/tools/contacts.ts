@@ -17,13 +17,13 @@ export async function listContacts(params: {
       pageToken: params.page_token,
     });
 
-    const contacts = response.data.map(c => ({
+    const contacts = response.data.map((c: any) => ({
       id: c.id,
       givenName: c.givenName,
       surname: c.surname,
       displayName: [c.givenName, c.surname].filter(Boolean).join(' ') || c.emails?.[0]?.email || 'Unknown',
-      emails: c.emails?.map(e => ({ email: e.email, type: e.type })) || [],
-      phoneNumbers: c.phoneNumbers?.map(p => ({ number: p.number, type: p.type })) || [],
+      emails: c.emails?.map((e: any) => ({ email: e.email, type: e.type })) || [],
+      phoneNumbers: c.phoneNumbers?.map((p: any) => ({ number: p.number, type: p.type })) || [],
       companyName: c.companyName,
       jobTitle: c.jobTitle,
     }));
@@ -55,8 +55,8 @@ export async function getContact(params: {
         givenName: contact.givenName,
         surname: contact.surname,
         displayName: [contact.givenName, contact.surname].filter(Boolean).join(' ') || 'Unknown',
-        emails: contact.emails?.map(e => ({ email: e.email, type: e.type })) || [],
-        phoneNumbers: contact.phoneNumbers?.map(p => ({ number: p.number, type: p.type })) || [],
+        emails: contact.emails?.map((e: any) => ({ email: e.email, type: e.type })) || [],
+        phoneNumbers: contact.phoneNumbers?.map((p: any) => ({ number: p.number, type: p.type })) || [],
         companyName: contact.companyName,
         jobTitle: contact.jobTitle,
         notes: contact.notes,
@@ -129,10 +129,10 @@ export async function searchContacts(params: {
       email: params.query,
     });
 
-    const contacts = response.data.map(c => ({
+    const contacts = response.data.map((c: any) => ({
       id: c.id,
       displayName: [c.givenName, c.surname].filter(Boolean).join(' ') || c.emails?.[0]?.email || 'Unknown',
-      emails: c.emails?.map(e => e.email) || [],
+      emails: c.emails?.map((e: any) => e.email) || [],
       companyName: c.companyName,
     }));
 

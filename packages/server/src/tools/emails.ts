@@ -23,7 +23,7 @@ export async function listEmails(params: {
       unread: params.unread_only,
     });
 
-    const emails = response.data.map(msg => ({
+    const emails = response.data.map((msg: any) => ({
       id: msg.id,
       threadId: msg.threadId,
       subject: msg.subject,
@@ -78,7 +78,7 @@ export async function getEmail(params: {
         isRead: !message.unread,
         isStarred: message.starred || false,
         hasAttachments: (message.attachments?.length || 0) > 0,
-        attachments: message.attachments?.map(a => ({
+        attachments: message.attachments?.map((a: any) => ({
           id: a.id,
           filename: a.filename,
           contentType: a.contentType,
@@ -226,7 +226,7 @@ export async function searchEmails(params: {
       },
     });
 
-    const emails = response.data.map(msg => ({
+    const emails = response.data.map((msg: any) => ({
       id: msg.id,
       threadId: msg.threadId,
       subject: msg.subject,
@@ -255,7 +255,7 @@ export async function listFolders(params: { tenant_id: string }) {
       trash: 'trash', spam: 'spam', archive: 'archive',
     };
 
-    const mappedFolders = folders.map(f => ({
+    const mappedFolders = folders.map((f: any) => ({
       id: f.id,
       name: f.name,
       type: typeMap[f.name?.toLowerCase() || ''] || 'custom',
@@ -265,7 +265,7 @@ export async function listFolders(params: { tenant_id: string }) {
 
     // Sort: system folders first
     const systemOrder = ['inbox', 'sent', 'drafts', 'archive', 'spam', 'trash'];
-    mappedFolders.sort((a, b) => {
+    mappedFolders.sort((a: any, b: any) => {
       const aIndex = systemOrder.indexOf(a.type);
       const bIndex = systemOrder.indexOf(b.type);
       if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;

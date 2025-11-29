@@ -54,6 +54,14 @@ export async function logActivity(params: {
   duration?: number;
 }) {
   return db.activityLog.create({
-    data: params,
+    data: {
+      tenantId: params.tenantId,
+      action: params.action,
+      status: params.status,
+      input: params.input as any,
+      output: params.output as any,
+      error: params.error,
+      duration: params.duration,
+    },
   });
 }

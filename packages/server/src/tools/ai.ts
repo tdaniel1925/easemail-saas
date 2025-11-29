@@ -58,13 +58,13 @@ export async function summarizeThread(params: {
       return { success: false, error: 'No messages found in thread' };
     }
 
-    const emails = response.data.map(msg => ({
+    const emails = response.data.map((msg: any) => ({
       from: msg.from?.[0]?.email || 'unknown',
       date: msg.date ? new Date(msg.date * 1000).toISOString() : 'unknown',
       body: msg.body || msg.snippet || '',
     }));
 
-    emails.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    emails.sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     const summary = await ai.summarizeThread(emails);
 
@@ -73,7 +73,7 @@ export async function summarizeThread(params: {
       data: {
         summary,
         messageCount: emails.length,
-        participants: [...new Set(emails.map(e => e.from))],
+        participants: [...new Set(emails.map((e: any) => e.from))],
       },
     };
   } catch (error) {

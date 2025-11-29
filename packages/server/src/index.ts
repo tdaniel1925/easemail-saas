@@ -12,7 +12,7 @@ import * as contactTools from './tools/contacts.js';
 import * as aiTools from './tools/ai.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3050;
 
 app.use(cors());
 app.use(express.json());
@@ -25,7 +25,8 @@ app.use('/auth', authRoutes);
 // ===========================================
 // TOOL REGISTRY
 // ===========================================
-const tools: Record<string, (params: Record<string, unknown>) => Promise<unknown>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tools: Record<string, (params: any) => Promise<unknown>> = {
   // Email
   list_emails: emailTools.listEmails,
   get_email: emailTools.getEmail,
