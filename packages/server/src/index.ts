@@ -5,9 +5,17 @@ import 'dotenv/config';
 // Import routes
 import authRoutes from './routes/auth.js';
 import integrationRoutes from './routes/integrations.js';
+import apiKeyRoutes from './routes/apiKeys.js';
 
 // Import integrations
 import { integrationRegistry } from './integrations/index.js';
+
+// Import middleware
+import { optionalApiKey } from './middleware/auth.js';
+import { rateLimit } from './middleware/rateLimit.js';
+
+// Import usage tracking
+import { trackUsageAsync } from './lib/usage.js';
 
 // Import tools
 import * as emailTools from './tools/emails.js';
@@ -21,6 +29,12 @@ const PORT = process.env.PORT || 3050;
 app.use(cors());
 app.use(express.json());
 
+// Apply optional API key auth to all requests
+app.use(optionalApiKey);
+
+// Apply rate limiting to all requests
+app.use(rateLimit());
+
 // ===========================================
 // AUTH ROUTES (OAuth flow)
 // ===========================================
@@ -30,6 +44,11 @@ app.use('/auth', authRoutes);
 // INTEGRATION ROUTES (Multi-provider OAuth)
 // ===========================================
 app.use('/integrations', integrationRoutes);
+
+// ===========================================
+// API KEY MANAGEMENT ROUTES
+// ===========================================
+app.use('/api-keys', apiKeyRoutes);
 
 // ===========================================
 // TOOL REGISTRY
@@ -128,6 +147,15 @@ app.post('/call', async (req, res) => {
 
   try {
     const result = await tools[tool](params || {});
+
+    // Track usage if tenant is known
+    const tenantId = req.tenantId || params?.tenant_id;
+    if (tenantId) {
+      // Determine integration from tool name
+      const integration = tool.startsWith('msgraph_') ? 'msgraph' : 'nylas';
+      trackUsageAsync({ tenantId, integrationId: integration, tool });
+    }
+
     res.json(result);
   } catch (error) {
     res.status(500).json({
@@ -227,14 +255,17 @@ async function startServer() {
 ║                                                           ║
 ║  Nylas OAuth (Email/Calendar/Contacts):                   ║
 ║  - Connect:    /auth/connect/:tenantId                    ║
-║  - Callback:   /auth/callback                             ║
 ║  - Status:     /auth/status/:tenantId                     ║
 ║                                                           ║
 ║  Multi-Integration OAuth:                                 ║
 ║  - List:       /integrations                              ║
-║  - Connect:    /integrations/:integration/connect/:tenant ║
-║  - Status:     /integrations/:integration/status/:tenant  ║
-║  - Connected:  /integrations/connected/:tenant            ║
+║  - Connect:    /integrations/:id/connect/:tenant          ║
+║  - Status:     /integrations/:id/status/:tenant           ║
+║                                                           ║
+║  API Keys & Usage:                                        ║
+║  - Keys:       /api-keys/:tenant                          ║
+║  - Usage:      /api-keys/:tenant/usage                    ║
+║  - Billing:    /api-keys/:tenant/billing                  ║
 ╚═══════════════════════════════════════════════════════════╝
     `);
   });
