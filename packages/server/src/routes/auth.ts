@@ -13,16 +13,16 @@ router.get('/connect/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
 
-    // Verify tenant exists
-    const tenant = await db.tenant.findFirst({
-      where: {
-        OR: [{ id: tenantId }, { slug: tenantId }],
+    // Auto-create tenant if doesn't exist (upsert)
+    const tenant = await db.tenant.upsert({
+      where: { id: tenantId },
+      update: {}, // don't update if exists
+      create: {
+        id: tenantId,
+        name: tenantId,
+        slug: tenantId,
       },
     });
-
-    if (!tenant) {
-      return res.status(404).json({ error: 'Tenant not found' });
-    }
 
     // Build Nylas auth URL
     const authUrl = nylas.auth.urlForOAuth2({
@@ -122,15 +122,16 @@ router.post('/disconnect/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
 
-    const tenant = await db.tenant.findFirst({
-      where: {
-        OR: [{ id: tenantId }, { slug: tenantId }],
+    // Auto-create tenant if doesn't exist (upsert)
+    const tenant = await db.tenant.upsert({
+      where: { id: tenantId },
+      update: {}, // don't update if exists
+      create: {
+        id: tenantId,
+        name: tenantId,
+        slug: tenantId,
       },
     });
-
-    if (!tenant) {
-      return res.status(404).json({ error: 'Tenant not found' });
-    }
 
     // Revoke Nylas grant if exists
     if (tenant.nylasGrantId) {
@@ -171,9 +172,14 @@ router.get('/status/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
 
-    const tenant = await db.tenant.findFirst({
-      where: {
-        OR: [{ id: tenantId }, { slug: tenantId }],
+    // Auto-create tenant if doesn't exist (upsert)
+    const tenant = await db.tenant.upsert({
+      where: { id: tenantId },
+      update: {}, // don't update if exists
+      create: {
+        id: tenantId,
+        name: tenantId,
+        slug: tenantId,
       },
       select: {
         id: true,
@@ -185,10 +191,6 @@ router.get('/status/:tenantId', async (req, res) => {
         connectedAt: true,
       },
     });
-
-    if (!tenant) {
-      return res.status(404).json({ error: 'Tenant not found' });
-    }
 
     res.json({
       connected: tenant.emailConnected,

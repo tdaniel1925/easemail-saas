@@ -10,20 +10,18 @@ if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = db;
 }
 
-// Helper to get tenant by slug
+// Helper to get tenant by slug - auto-creates if doesn't exist
 export async function getTenant(tenantId: string) {
-  const tenant = await db.tenant.findFirst({
-    where: {
-      OR: [
-        { id: tenantId },
-        { slug: tenantId },
-      ],
+  // Auto-create tenant if doesn't exist (upsert)
+  const tenant = await db.tenant.upsert({
+    where: { id: tenantId },
+    update: {}, // don't update if exists
+    create: {
+      id: tenantId,
+      name: tenantId,
+      slug: tenantId,
     },
   });
-
-  if (!tenant) {
-    throw new Error(`Tenant not found: ${tenantId}`);
-  }
 
   if (!tenant.isActive) {
     throw new Error(`Tenant is inactive: ${tenantId}`);
