@@ -17,7 +17,8 @@
       "Bash(npm run dev:server:*)",
       "Bash(curl:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
