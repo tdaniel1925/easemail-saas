@@ -28,9 +28,12 @@ model Tenant {
   connectedAt    DateTime?
 
   // Relations
-  accounts  Account[]
-  syncState SyncState?
-  logs      ActivityLog[]
+  accounts               Account[]
+  syncState              SyncState?
+  logs                   ActivityLog[]
+  integrationCredentials IntegrationCredential[]
+  apiKeys                ApiKey[]
+  usageRecords           UsageRecord[]
 }
 
 // ============================================
@@ -91,4 +94,74 @@ model ActivityLog {
 
   @@index([tenantId, createdAt(sort: Desc)])
   @@index([action])
+}
+
+// ============================================
+// INTEGRATION CREDENTIALS
+// Store OAuth tokens for various integrations
+// ============================================
+
+model IntegrationCredential {
+  id             String    @id @default(cuid())
+  tenantId       String
+  integrationId  String    // "nylas", "msgraph", "slack", etc.
+  accountEmail   String?   // Email associated with this credential
+  accessToken    String?   @db.Text
+  refreshToken   String?   @db.Text
+  expiresAt      DateTime?
+  grantId        String?   // For Nylas-style integrations
+  metadata       Json?     // Extra data (displayName, etc.)
+  isActive       Boolean   @default(true)
+  isPrimary      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, integrationId, accountEmail])
+  @@index([tenantId, integrationId, isActive])
+}
+
+// ============================================
+// API KEYS
+// For programmatic access to the API
+// ============================================
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String    // "Production Key", "Development", etc.
+  keyHash     String    @unique // SHA-256 hash of the API key
+  keyPrefix   String    // First 8 chars for identification (e.g., "bm_live_")
+  scopes      String[]  // ["read:emails", "write:emails", "read:calendar", etc.]
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, isActive])
+  @@index([keyHash])
+}
+
+// ============================================
+// USAGE TRACKING
+// Track API usage for billing
+// ============================================
+
+model UsageRecord {
+  id            String   @id @default(cuid())
+  tenantId      String
+  integrationId String   // "nylas", "msgraph", etc.
+  tool          String   // "list_emails", "send_email", etc.
+  count         Int      @default(1)
+  period        String   // "2024-01" (year-month)
+  createdAt     DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, integrationId, tool, period])
+  @@index([tenantId, period])
 }

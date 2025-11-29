@@ -4,6 +4,10 @@ import 'dotenv/config';
 
 // Import routes
 import authRoutes from './routes/auth.js';
+import integrationRoutes from './routes/integrations.js';
+
+// Import integrations
+import { integrationRegistry } from './integrations/index.js';
 
 // Import tools
 import * as emailTools from './tools/emails.js';
@@ -21,6 +25,11 @@ app.use(express.json());
 // AUTH ROUTES (OAuth flow)
 // ===========================================
 app.use('/auth', authRoutes);
+
+// ===========================================
+// INTEGRATION ROUTES (Multi-provider OAuth)
+// ===========================================
+app.use('/integrations', integrationRoutes);
 
 // ===========================================
 // TOOL REGISTRY
@@ -202,20 +211,33 @@ app.get('/contacts/:tenantId', async (req, res) => {
 // ===========================================
 
 const HOST = '0.0.0.0';
-app.listen(Number(PORT), HOST, () => {
-  console.log(`
-╔═══════════════════════════════════════════════════╗
-║         EaseMail SaaS API Server                  ║
-╠═══════════════════════════════════════════════════╣
-║  Server:    http://${HOST}:${PORT}                     ║
-║  Health:    /health                               ║
-║  Tools:     /tools                                ║
-║                                                   ║
-║  OAuth:                                           ║
-║  - Connect:    /auth/connect/:tenantId            ║
-║  - Callback:   /auth/callback                     ║
-║  - Status:     /auth/status/:tenantId             ║
-║  - Disconnect: /auth/disconnect/:tenantId         ║
-╚═══════════════════════════════════════════════════╝
-  `);
-});
+
+async function startServer() {
+  // Initialize all integrations
+  await integrationRegistry.initializeAll();
+
+  app.listen(Number(PORT), HOST, () => {
+    console.log(`
+╔═══════════════════════════════════════════════════════════╗
+║           BotMakers MCP SaaS Platform                     ║
+╠═══════════════════════════════════════════════════════════╣
+║  Server:       http://${HOST}:${PORT}                          ║
+║  Health:       /health                                    ║
+║  Tools:        /tools                                     ║
+║                                                           ║
+║  Nylas OAuth (Email/Calendar/Contacts):                   ║
+║  - Connect:    /auth/connect/:tenantId                    ║
+║  - Callback:   /auth/callback                             ║
+║  - Status:     /auth/status/:tenantId                     ║
+║                                                           ║
+║  Multi-Integration OAuth:                                 ║
+║  - List:       /integrations                              ║
+║  - Connect:    /integrations/:integration/connect/:tenant ║
+║  - Status:     /integrations/:integration/status/:tenant  ║
+║  - Connected:  /integrations/connected/:tenant            ║
+╚═══════════════════════════════════════════════════════════╝
+    `);
+  });
+}
+
+startServer().catch(console.error);
