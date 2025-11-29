@@ -201,14 +201,15 @@ app.get('/contacts/:tenantId', async (req, res) => {
 // START SERVER
 // ===========================================
 
-app.listen(PORT, () => {
+const HOST = '0.0.0.0';
+app.listen(Number(PORT), HOST, () => {
   console.log(`
 ╔═══════════════════════════════════════════════════╗
 ║         EaseMail SaaS API Server                  ║
 ╠═══════════════════════════════════════════════════╣
-║  Server:    http://localhost:${PORT}                  ║
-║  Health:    http://localhost:${PORT}/health           ║
-║  Tools:     http://localhost:${PORT}/tools            ║
+║  Server:    http://${HOST}:${PORT}                     ║
+║  Health:    /health                               ║
+║  Tools:     /tools                                ║
 ║                                                   ║
 ║  OAuth:                                           ║
 ║  - Connect:    /auth/connect/:tenantId            ║
