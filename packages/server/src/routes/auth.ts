@@ -13,16 +13,26 @@ router.get('/connect/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
 
-    // Auto-create tenant if doesn't exist (upsert)
-    const tenant = await db.tenant.upsert({
-      where: { id: tenantId },
-      update: {}, // don't update if exists
-      create: {
-        id: tenantId,
-        name: tenantId,
-        slug: tenantId,
+    // Find existing tenant by id or slug
+    let tenant = await db.tenant.findFirst({
+      where: {
+        OR: [
+          { id: tenantId },
+          { slug: tenantId },
+        ],
       },
     });
+
+    // Create if doesn't exist
+    if (!tenant) {
+      tenant = await db.tenant.create({
+        data: {
+          id: tenantId,
+          name: tenantId,
+          slug: tenantId,
+        },
+      });
+    }
 
     // Build Nylas auth URL
     const authUrl = nylas.auth.urlForOAuth2({
@@ -122,16 +132,26 @@ router.post('/disconnect/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
 
-    // Auto-create tenant if doesn't exist (upsert)
-    const tenant = await db.tenant.upsert({
-      where: { id: tenantId },
-      update: {}, // don't update if exists
-      create: {
-        id: tenantId,
-        name: tenantId,
-        slug: tenantId,
+    // Find existing tenant by id or slug
+    let tenant = await db.tenant.findFirst({
+      where: {
+        OR: [
+          { id: tenantId },
+          { slug: tenantId },
+        ],
       },
     });
+
+    // Create if doesn't exist
+    if (!tenant) {
+      tenant = await db.tenant.create({
+        data: {
+          id: tenantId,
+          name: tenantId,
+          slug: tenantId,
+        },
+      });
+    }
 
     // Revoke Nylas grant if exists
     if (tenant.nylasGrantId) {
@@ -172,14 +192,13 @@ router.get('/status/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
 
-    // Auto-create tenant if doesn't exist (upsert)
-    const tenant = await db.tenant.upsert({
-      where: { id: tenantId },
-      update: {}, // don't update if exists
-      create: {
-        id: tenantId,
-        name: tenantId,
-        slug: tenantId,
+    // Find existing tenant by id or slug
+    let tenant = await db.tenant.findFirst({
+      where: {
+        OR: [
+          { id: tenantId },
+          { slug: tenantId },
+        ],
       },
       select: {
         id: true,
@@ -191,6 +210,26 @@ router.get('/status/:tenantId', async (req, res) => {
         connectedAt: true,
       },
     });
+
+    // Create if doesn't exist
+    if (!tenant) {
+      tenant = await db.tenant.create({
+        data: {
+          id: tenantId,
+          name: tenantId,
+          slug: tenantId,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          emailConnected: true,
+          connectedEmail: true,
+          provider: true,
+          connectedAt: true,
+        },
+      });
+    }
 
     res.json({
       connected: tenant.emailConnected,

@@ -12,16 +12,26 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Helper to get tenant by slug - auto-creates if doesn't exist
 export async function getTenant(tenantId: string) {
-  // Auto-create tenant if doesn't exist (upsert)
-  const tenant = await db.tenant.upsert({
-    where: { id: tenantId },
-    update: {}, // don't update if exists
-    create: {
-      id: tenantId,
-      name: tenantId,
-      slug: tenantId,
+  // Find existing tenant by id or slug
+  let tenant = await db.tenant.findFirst({
+    where: {
+      OR: [
+        { id: tenantId },
+        { slug: tenantId },
+      ],
     },
   });
+
+  // Create if doesn't exist
+  if (!tenant) {
+    tenant = await db.tenant.create({
+      data: {
+        id: tenantId,
+        name: tenantId,
+        slug: tenantId,
+      },
+    });
+  }
 
   if (!tenant.isActive) {
     throw new Error(`Tenant is inactive: ${tenantId}`);
