@@ -7,6 +7,8 @@ import authRoutes from './routes/auth.js';
 import integrationRoutes from './routes/integrations.js';
 import apiKeyRoutes from './routes/apiKeys.js';
 import folderRoutes from './routes/folders.js';
+import contactRoutes from './routes/contacts.js';
+import calendarRoutes from './routes/calendar.js';
 
 // Import integrations
 import { integrationRegistry } from './integrations/index.js';
@@ -55,6 +57,16 @@ app.use('/api-keys', apiKeyRoutes);
 // FOLDER SYNC ROUTES
 // ===========================================
 app.use('/folders', folderRoutes);
+
+// ===========================================
+// CONTACT SYNC ROUTES
+// ===========================================
+app.use('/contacts-sync', contactRoutes);
+
+// ===========================================
+// CALENDAR SYNC ROUTES
+// ===========================================
+app.use('/calendar-sync', calendarRoutes);
 
 // ===========================================
 // TOOL REGISTRY

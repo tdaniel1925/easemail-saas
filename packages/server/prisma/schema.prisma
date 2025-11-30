@@ -35,6 +35,9 @@ model Tenant {
   apiKeys                ApiKey[]
   usageRecords           UsageRecord[]
   emailFolders           EmailFolder[]
+  contacts               Contact[]
+  calendars              Calendar[]
+  calendarEvents         CalendarEvent[]
 }
 
 // ============================================
@@ -192,4 +195,103 @@ model EmailFolder {
   @@index([tenantId, type])
   @@index([tenantId, name])
   @@index([tenantId, path])
+}
+
+// ============================================
+// CONTACTS
+// Cache for contacts from email provider
+// ============================================
+
+model Contact {
+  id           String   @id @default(cuid())
+  tenantId     String
+  providerId   String   // Contact ID from email provider (Nylas)
+  email        String?  // Primary email
+  givenName    String?
+  surname      String?
+  displayName  String?  // Full display name
+  companyName  String?
+  jobTitle     String?
+  phoneNumbers Json?    // Array of { number, type }
+  emails       Json?    // Array of { email, type }
+  addresses    Json?    // Array of { street, city, state, country, postalCode, type }
+  birthday     DateTime?
+  notes        String?  @db.Text
+  photoUrl     String?
+  groups       String[] // Contact group IDs
+  source       String?  // "address_book", "domain", etc.
+  syncedAt     DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, providerId])
+  @@index([tenantId, email])
+  @@index([tenantId, displayName])
+  @@index([tenantId, companyName])
+}
+
+// ============================================
+// CALENDARS
+// Cache for calendars from email provider
+// ============================================
+
+model Calendar {
+  id          String   @id @default(cuid())
+  tenantId    String
+  providerId  String   // Calendar ID from email provider (Nylas)
+  name        String
+  description String?
+  location    String?
+  timezone    String?
+  isPrimary   Boolean  @default(false)
+  isReadOnly  Boolean  @default(false)
+  hexColor    String?  // Calendar color
+  syncedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  events CalendarEvent[]
+
+  @@unique([tenantId, providerId])
+  @@index([tenantId, isPrimary])
+}
+
+// ============================================
+// CALENDAR EVENTS
+// Cache for calendar events
+// ============================================
+
+model CalendarEvent {
+  id            String    @id @default(cuid())
+  tenantId      String
+  calendarId    String    // Local calendar ID
+  providerId    String    // Event ID from email provider (Nylas)
+  title         String
+  description   String?   @db.Text
+  location      String?
+  startTime     DateTime
+  endTime       DateTime
+  allDay        Boolean   @default(false)
+  status        String?   // "confirmed", "tentative", "cancelled"
+  busy          Boolean   @default(true)
+  recurrence    Json?     // Recurrence rules
+  participants  Json?     // Array of { email, name, status }
+  organizer     Json?     // { email, name }
+  reminders     Json?     // Array of reminder settings
+  conferencing  Json?     // Video conferencing details
+  masterEventId String?   // For recurring event instances
+  syncedAt      DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  calendar Calendar @relation(fields: [calendarId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, providerId])
+  @@index([tenantId, calendarId])
+  @@index([tenantId, startTime])
+  @@index([tenantId, endTime])
 }
