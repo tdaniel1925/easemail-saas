@@ -12,6 +12,7 @@ import * as nylasLib from './nylas.js';
 
 export interface SyncedFolder {
   id: string;
+  providerId: string; // Folder ID from email provider (Nylas)
   name: string;
   type: 'inbox' | 'sent' | 'drafts' | 'trash' | 'spam' | 'archive' | 'custom';
   totalCount: number;
