@@ -324,6 +324,17 @@ router.get('/callback', async (req, res) => {
 
     // Also update legacy tenant fields for backward compatibility
     if (isFirstAccount) {
+      // First, clear this grantId from any other tenant that might have it
+      await db.tenant.updateMany({
+        where: {
+          nylasGrantId: grantId,
+          id: { not: String(tenantId) },
+        },
+        data: {
+          nylasGrantId: null,
+        },
+      });
+
       await db.tenant.update({
         where: { id: String(tenantId) },
         data: {
