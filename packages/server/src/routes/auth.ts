@@ -5,6 +5,184 @@ import 'dotenv/config';
 
 const router = Router();
 
+// ===========================================
+// HTML PAGE TEMPLATES
+// ===========================================
+
+function renderSuccessPage(email: string, tenantId: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Connected - BotMakers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg { width: 40px; height: 40px; color: white; }
+    h1 { color: #1f2937; margin-bottom: 12px; font-size: 24px; }
+    .email {
+      color: #6b7280;
+      font-size: 16px;
+      margin-bottom: 24px;
+      word-break: break-all;
+    }
+    .email strong { color: #374151; }
+    .info {
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: #4b5563;
+    }
+    .close-hint {
+      color: #9ca3af;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+    </div>
+    <h1>Account Connected!</h1>
+    <p class="email"><strong>${email}</strong> has been connected successfully.</p>
+    <div class="info">
+      <p>Your email account is now linked to tenant: <strong>${tenantId}</strong></p>
+      <p style="margin-top: 8px;">You can now use all email, calendar, and contact features.</p>
+    </div>
+    <p class="close-hint">You can close this window now.</p>
+  </div>
+</body>
+</html>
+`;
+}
+
+function renderErrorPage(error: string, message: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connection Failed - BotMakers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .icon {
+      width: 80px;
+      height: 80px;
+      background: #ef4444;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg { width: 40px; height: 40px; color: white; }
+    h1 { color: #1f2937; margin-bottom: 12px; font-size: 24px; }
+    .error-type {
+      color: #ef4444;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .message {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: #991b1b;
+      word-break: break-word;
+    }
+    .retry-btn {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .retry-btn:hover { background: #5a67d8; }
+    .close-hint {
+      color: #9ca3af;
+      font-size: 14px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>
+    </div>
+    <h1>Connection Failed</h1>
+    <p class="error-type">${error}</p>
+    <div class="message">
+      <p>${message}</p>
+    </div>
+    <p class="close-hint">Please close this window and try again.</p>
+  </div>
+</body>
+</html>
+`;
+}
+
 // Helper to find or create tenant
 async function getOrCreateTenant(tenantId: string) {
   let tenant = await db.tenant.findFirst({
@@ -66,15 +244,11 @@ router.get('/callback', async (req, res) => {
     // Handle OAuth errors
     if (error) {
       console.error('OAuth error:', error);
-      return res.redirect(
-        `${process.env.APP_URL}/settings?error=oauth_failed&message=${encodeURIComponent(String(error))}`
-      );
+      return res.send(renderErrorPage('OAuth Error', String(error)));
     }
 
     if (!code || !tenantId) {
-      return res.redirect(
-        `${process.env.APP_URL}/settings?error=missing_params`
-      );
+      return res.send(renderErrorPage('Missing Parameters', 'Authorization code or tenant ID is missing. Please try connecting again.'));
     }
 
     // Exchange code for grant
@@ -143,17 +317,12 @@ router.get('/callback', async (req, res) => {
 
     console.log(`Account connected: ${email} (${provider}) for tenant ${tenantId}`);
 
-    // Redirect back to app
-    res.redirect(
-      `${process.env.APP_URL}/settings?success=connected&email=${encodeURIComponent(email || '')}`
-    );
+    // Render success page
+    res.send(renderSuccessPage(email || 'Unknown email', String(tenantId)));
   } catch (error) {
     console.error('OAuth callback error:', error);
-    res.redirect(
-      `${process.env.APP_URL}/settings?error=callback_failed&message=${encodeURIComponent(
-        error instanceof Error ? error.message : 'Unknown error'
-      )}`
-    );
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.send(renderErrorPage('Connection Failed', errorMessage));
   }
 });
 

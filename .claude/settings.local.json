@@ -18,7 +18,9 @@
       "Bash(curl:*)",
       "Bash(npx tsc:*)",
       "Bash(npm run build:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(npx prisma db push:*)",
+      "Bash(timeout /t 2 /nobreak)"
     ],
     "deny": [],
     "ask": []
