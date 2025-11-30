@@ -6,6 +6,7 @@ import 'dotenv/config';
 import authRoutes from './routes/auth.js';
 import integrationRoutes from './routes/integrations.js';
 import apiKeyRoutes from './routes/apiKeys.js';
+import folderRoutes from './routes/folders.js';
 
 // Import integrations
 import { integrationRegistry } from './integrations/index.js';
@@ -51,6 +52,11 @@ app.use('/integrations', integrationRoutes);
 app.use('/api-keys', apiKeyRoutes);
 
 // ===========================================
+// FOLDER SYNC ROUTES
+// ===========================================
+app.use('/folders', folderRoutes);
+
+// ===========================================
 // TOOL REGISTRY
 // ===========================================
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,6 +71,16 @@ const tools: Record<string, (params: any) => Promise<unknown>> = {
   trash_email: emailTools.trashEmail,
   search_emails: emailTools.searchEmails,
   list_folders: emailTools.listFolders,
+
+  // Folder Management
+  get_folder: emailTools.getFolder,
+  create_folder: emailTools.createFolder,
+  update_folder: emailTools.updateFolder,
+  delete_folder: emailTools.deleteFolder,
+  get_folder_by_name: emailTools.getFolderByName,
+  move_email_to_folder: emailTools.moveEmailToFolder,
+  add_email_to_folders: emailTools.addEmailToFolders,
+  remove_email_from_folder: emailTools.removeEmailFromFolder,
 
   // Calendar
   list_calendars: calendarTools.listCalendars,
@@ -109,6 +125,16 @@ app.get('/tools', (req, res) => {
     { name: 'trash_email', category: 'email', description: 'Move email to trash' },
     { name: 'search_emails', category: 'email', description: 'Search emails' },
     { name: 'list_folders', category: 'email', description: 'List email folders' },
+
+    // Folder Management
+    { name: 'get_folder', category: 'folders', description: 'Get folder details by ID' },
+    { name: 'create_folder', category: 'folders', description: 'Create a new custom folder' },
+    { name: 'update_folder', category: 'folders', description: 'Rename a folder' },
+    { name: 'delete_folder', category: 'folders', description: 'Delete a folder' },
+    { name: 'get_folder_by_name', category: 'folders', description: 'Get folder ID by name' },
+    { name: 'move_email_to_folder', category: 'folders', description: 'Move email to folder by name (creates if missing)' },
+    { name: 'add_email_to_folders', category: 'folders', description: 'Add email to multiple folders/labels' },
+    { name: 'remove_email_from_folder', category: 'folders', description: 'Remove email from a folder' },
 
     // Calendar
     { name: 'list_calendars', category: 'calendar', description: 'List calendars' },

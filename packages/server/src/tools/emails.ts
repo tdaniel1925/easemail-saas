@@ -261,6 +261,7 @@ export async function listFolders(params: { tenant_id: string }) {
       type: typeMap[f.name?.toLowerCase() || ''] || 'custom',
       totalCount: f.totalCount || 0,
       unreadCount: f.unreadCount || 0,
+      parentId: f.parentId || null,
     }));
 
     // Sort: system folders first
@@ -275,6 +276,268 @@ export async function listFolders(params: { tenant_id: string }) {
     });
 
     return { success: true, data: { folders: mappedFolders } };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// ===========================================
+// GET FOLDER
+// ===========================================
+export async function getFolder(params: {
+  tenant_id: string;
+  folder_id: string;
+}) {
+  try {
+    const tenant = await getTenantWithGrant(params.tenant_id);
+    const folder = await nylasLib.getFolder(tenant.nylasGrantId!, params.folder_id);
+
+    return {
+      success: true,
+      data: {
+        id: folder.id,
+        name: folder.name,
+        totalCount: folder.totalCount || 0,
+        unreadCount: folder.unreadCount || 0,
+        parentId: folder.parentId || null,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// ===========================================
+// CREATE FOLDER
+// ===========================================
+export async function createFolder(params: {
+  tenant_id: string;
+  name: string;
+  parent_id?: string;
+}) {
+  try {
+    const tenant = await getTenantWithGrant(params.tenant_id);
+    const folder = await nylasLib.createFolder(tenant.nylasGrantId!, params.name, params.parent_id);
+
+    await logActivity({
+      tenantId: tenant.id,
+      action: 'create_folder',
+      status: 'success',
+      input: { name: params.name },
+    });
+
+    return {
+      success: true,
+      data: {
+        id: folder.id,
+        name: folder.name,
+        parentId: folder.parentId || null,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// ===========================================
+// UPDATE FOLDER
+// ===========================================
+export async function updateFolder(params: {
+  tenant_id: string;
+  folder_id: string;
+  name: string;
+}) {
+  try {
+    const tenant = await getTenantWithGrant(params.tenant_id);
+    const folder = await nylasLib.updateFolder(tenant.nylasGrantId!, params.folder_id, params.name);
+
+    return {
+      success: true,
+      data: {
+        id: folder.id,
+        name: folder.name,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// ===========================================
+// DELETE FOLDER
+// ===========================================
+export async function deleteFolder(params: {
+  tenant_id: string;
+  folder_id: string;
+}) {
+  try {
+    const tenant = await getTenantWithGrant(params.tenant_id);
+    await nylasLib.deleteFolder(tenant.nylasGrantId!, params.folder_id);
+
+    await logActivity({
+      tenantId: tenant.id,
+      action: 'delete_folder',
+      status: 'success',
+      input: { folderId: params.folder_id },
+    });
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// ===========================================
+// MOVE EMAIL TO FOLDER BY NAME
+// Allows moving email using folder name instead of ID
+// Creates the folder if it doesn't exist
+// ===========================================
+export async function moveEmailToFolder(params: {
+  tenant_id: string;
+  email_id: string;
+  folder_name: string;
+  create_if_missing?: boolean;
+}) {
+  try {
+    const tenant = await getTenantWithGrant(params.tenant_id);
+
+    // Find folder by name
+    let folder = await nylasLib.findFolderByName(tenant.nylasGrantId!, params.folder_name);
+
+    // Create folder if it doesn't exist and create_if_missing is true
+    if (!folder && params.create_if_missing) {
+      folder = await nylasLib.createFolder(tenant.nylasGrantId!, params.folder_name);
+    }
+
+    if (!folder) {
+      return {
+        success: false,
+        error: `Folder "${params.folder_name}" not found. Set create_if_missing=true to create it.`,
+      };
+    }
+
+    // Move the email
+    await nylasLib.updateMessage(tenant.nylasGrantId!, params.email_id, {
+      folders: [folder.id],
+    });
+
+    await logActivity({
+      tenantId: tenant.id,
+      action: 'move_email_to_folder',
+      status: 'success',
+      input: { emailId: params.email_id, folderName: params.folder_name },
+    });
+
+    return {
+      success: true,
+      data: {
+        folderId: folder.id,
+        folderName: folder.name,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// ===========================================
+// ADD EMAIL TO FOLDERS
+// Add email to multiple folders (labels in Gmail)
+// ===========================================
+export async function addEmailToFolders(params: {
+  tenant_id: string;
+  email_id: string;
+  folder_ids: string[];
+}) {
+  try {
+    const tenant = await getTenantWithGrant(params.tenant_id);
+
+    // Get current folders
+    const message = await nylasLib.getMessage(tenant.nylasGrantId!, params.email_id);
+    const currentFolders = message.folders || [];
+
+    // Merge with new folders (remove duplicates)
+    const allFolders = [...new Set([...currentFolders, ...params.folder_ids])];
+
+    await nylasLib.updateMessage(tenant.nylasGrantId!, params.email_id, {
+      folders: allFolders,
+    });
+
+    return {
+      success: true,
+      data: { folders: allFolders },
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// ===========================================
+// REMOVE EMAIL FROM FOLDER
+// ===========================================
+export async function removeEmailFromFolder(params: {
+  tenant_id: string;
+  email_id: string;
+  folder_id: string;
+}) {
+  try {
+    const tenant = await getTenantWithGrant(params.tenant_id);
+
+    // Get current folders
+    const message = await nylasLib.getMessage(tenant.nylasGrantId!, params.email_id);
+    const currentFolders = message.folders || [];
+
+    // Remove the specified folder
+    const newFolders = currentFolders.filter((f: string) => f !== params.folder_id);
+
+    if (newFolders.length === 0) {
+      return {
+        success: false,
+        error: 'Cannot remove email from all folders. At least one folder is required.',
+      };
+    }
+
+    await nylasLib.updateMessage(tenant.nylasGrantId!, params.email_id, {
+      folders: newFolders,
+    });
+
+    return {
+      success: true,
+      data: { folders: newFolders },
+    };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// ===========================================
+// GET FOLDER BY NAME
+// Helper to get folder ID from name
+// ===========================================
+export async function getFolderByName(params: {
+  tenant_id: string;
+  folder_name: string;
+}) {
+  try {
+    const tenant = await getTenantWithGrant(params.tenant_id);
+    const folder = await nylasLib.findFolderByName(tenant.nylasGrantId!, params.folder_name);
+
+    if (!folder) {
+      return {
+        success: false,
+        error: `Folder "${params.folder_name}" not found`,
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        id: folder.id,
+        name: folder.name,
+        totalCount: folder.totalCount || 0,
+        unreadCount: folder.unreadCount || 0,
+      },
+    };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }

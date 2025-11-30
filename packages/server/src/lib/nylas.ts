@@ -87,6 +87,49 @@ export async function listFolders(grantId: string) {
   return response.data;
 }
 
+export async function getFolder(grantId: string, folderId: string) {
+  const response = await nylas.folders.find({
+    identifier: grantId,
+    folderId,
+  });
+  return response.data;
+}
+
+export async function createFolder(grantId: string, name: string, parentId?: string) {
+  const requestBody: Record<string, unknown> = { name };
+  if (parentId) requestBody.parentId = parentId;
+
+  const response = await nylas.folders.create({
+    identifier: grantId,
+    requestBody,
+  });
+  return response.data;
+}
+
+export async function updateFolder(grantId: string, folderId: string, name: string) {
+  const response = await nylas.folders.update({
+    identifier: grantId,
+    folderId,
+    requestBody: { name },
+  });
+  return response.data;
+}
+
+export async function deleteFolder(grantId: string, folderId: string) {
+  return nylas.folders.destroy({
+    identifier: grantId,
+    folderId,
+  });
+}
+
+export async function findFolderByName(grantId: string, name: string) {
+  const folders = await listFolders(grantId);
+  const normalizedName = name.toLowerCase();
+  return folders.find((f: { name?: string }) =>
+    f.name?.toLowerCase() === normalizedName
+  );
+}
+
 // ===========================================
 // CALENDAR HELPERS
 // ===========================================

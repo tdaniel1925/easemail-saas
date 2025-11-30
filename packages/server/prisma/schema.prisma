@@ -34,6 +34,7 @@ model Tenant {
   integrationCredentials IntegrationCredential[]
   apiKeys                ApiKey[]
   usageRecords           UsageRecord[]
+  emailFolders           EmailFolder[]
 }
 
 // ============================================
@@ -164,4 +165,31 @@ model UsageRecord {
 
   @@unique([tenantId, integrationId, tool, period])
   @@index([tenantId, period])
+}
+
+// ============================================
+// EMAIL FOLDERS
+// Cache for email folders including custom ones
+// ============================================
+
+model EmailFolder {
+  id          String   @id @default(cuid())
+  tenantId    String
+  providerId  String   // Folder ID from email provider (Nylas)
+  name        String   // Folder display name
+  type        String   // "inbox", "sent", "drafts", "trash", "spam", "archive", "custom"
+  totalCount  Int      @default(0)
+  unreadCount Int      @default(0)
+  parentId    String?  // For nested folders
+  path        String   // Full path like "Clients/Acme Corp"
+  syncedAt    DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, providerId])
+  @@index([tenantId, type])
+  @@index([tenantId, name])
+  @@index([tenantId, path])
 }
