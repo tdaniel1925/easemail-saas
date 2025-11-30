@@ -272,27 +272,55 @@ router.get('/callback', async (req, res) => {
     });
     const isFirstAccount = existingAccounts === 0;
 
-    // Create or update account
-    await db.account.upsert({
-      where: {
-        tenantId_email: {
+    // Check if account with this grantId already exists (could be from reconnect)
+    const existingByGrantId = await db.account.findFirst({
+      where: { nylasGrantId: grantId },
+    });
+
+    if (existingByGrantId) {
+      // Account with this grantId exists - update it
+      await db.account.update({
+        where: { id: existingByGrantId.id },
+        data: {
+          tenantId: String(tenantId),
+          email: email,
+          provider: provider,
+          isActive: true,
+          isPrimary: isFirstAccount || existingByGrantId.isPrimary,
+        },
+      });
+    } else {
+      // Check if account with same tenant+email exists
+      const existingByEmail = await db.account.findFirst({
+        where: {
           tenantId: String(tenantId),
           email: email,
         },
-      },
-      update: {
-        nylasGrantId: grantId,
-        provider: provider,
-        isActive: true,
-      },
-      create: {
-        tenantId: String(tenantId),
-        email: email,
-        provider: provider,
-        nylasGrantId: grantId,
-        isPrimary: isFirstAccount, // First account is primary
-      },
-    });
+      });
+
+      if (existingByEmail) {
+        // Update existing account with new grantId
+        await db.account.update({
+          where: { id: existingByEmail.id },
+          data: {
+            nylasGrantId: grantId,
+            provider: provider,
+            isActive: true,
+          },
+        });
+      } else {
+        // Create new account
+        await db.account.create({
+          data: {
+            tenantId: String(tenantId),
+            email: email,
+            provider: provider,
+            nylasGrantId: grantId,
+            isPrimary: isFirstAccount,
+          },
+        });
+      }
+    }
 
     // Also update legacy tenant fields for backward compatibility
     if (isFirstAccount) {
