@@ -19,6 +19,7 @@ import { zoomIntegration } from './zoom/index.js';
 import { teamsIntegration } from './teams/index.js';
 import { whatsappIntegration } from './whatsapp/index.js';
 import { vapiIntegration } from './vapi/index.js';
+import { autocallsIntegration } from './autocalls/index.js';
 
 // Productivity
 import { notionIntegration } from './notion/index.js';
@@ -70,6 +71,7 @@ integrationRegistry.register(zoomIntegration);
 integrationRegistry.register(teamsIntegration);
 integrationRegistry.register(whatsappIntegration);
 integrationRegistry.register(vapiIntegration);
+integrationRegistry.register(autocallsIntegration);
 
 // Productivity
 integrationRegistry.register(notionIntegration);
@@ -124,6 +126,7 @@ export { zoomIntegration } from './zoom/index.js';
 export { teamsIntegration } from './teams/index.js';
 export { whatsappIntegration } from './whatsapp/index.js';
 export { vapiIntegration } from './vapi/index.js';
+export { autocallsIntegration } from './autocalls/index.js';
 
 // Productivity
 export { notionIntegration } from './notion/index.js';
