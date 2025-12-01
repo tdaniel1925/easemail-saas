@@ -11,13 +11,14 @@ import { msGraphIntegration } from './msgraph/index.js';
 import { googleCalendarIntegration } from './google-calendar/index.js';
 import { calComIntegration } from './cal-com/index.js';
 
-// Communication
+// Communication & Voice
 import { dialpadIntegration } from './dialpad/index.js';
 import { slackIntegration } from './slack/index.js';
 import { discordIntegration } from './discord/index.js';
 import { zoomIntegration } from './zoom/index.js';
 import { teamsIntegration } from './teams/index.js';
 import { whatsappIntegration } from './whatsapp/index.js';
+import { vapiIntegration } from './vapi/index.js';
 
 // Productivity
 import { notionIntegration } from './notion/index.js';
@@ -34,6 +35,7 @@ import { salesforceIntegration } from './salesforce/index.js';
 import { pipedriveIntegration } from './pipedrive/index.js';
 import { gohighlevelIntegration } from './gohighlevel/index.js';
 import { closeIntegration } from './close/index.js';
+import { filevineIntegration } from './filevine/index.js';
 
 // Finance
 import { stripeIntegration } from './stripe/index.js';
@@ -60,13 +62,14 @@ integrationRegistry.register(msGraphIntegration);
 integrationRegistry.register(googleCalendarIntegration);
 integrationRegistry.register(calComIntegration);
 
-// Communication
+// Communication & Voice
 integrationRegistry.register(dialpadIntegration);
 integrationRegistry.register(slackIntegration);
 integrationRegistry.register(discordIntegration);
 integrationRegistry.register(zoomIntegration);
 integrationRegistry.register(teamsIntegration);
 integrationRegistry.register(whatsappIntegration);
+integrationRegistry.register(vapiIntegration);
 
 // Productivity
 integrationRegistry.register(notionIntegration);
@@ -83,6 +86,7 @@ integrationRegistry.register(salesforceIntegration);
 integrationRegistry.register(pipedriveIntegration);
 integrationRegistry.register(gohighlevelIntegration);
 integrationRegistry.register(closeIntegration);
+integrationRegistry.register(filevineIntegration);
 
 // Finance
 integrationRegistry.register(stripeIntegration);
@@ -112,13 +116,14 @@ export { msGraphIntegration } from './msgraph/index.js';
 export { googleCalendarIntegration } from './google-calendar/index.js';
 export { calComIntegration } from './cal-com/index.js';
 
-// Communication
+// Communication & Voice
 export { dialpadIntegration } from './dialpad/index.js';
 export { slackIntegration } from './slack/index.js';
 export { discordIntegration } from './discord/index.js';
 export { zoomIntegration } from './zoom/index.js';
 export { teamsIntegration } from './teams/index.js';
 export { whatsappIntegration } from './whatsapp/index.js';
+export { vapiIntegration } from './vapi/index.js';
 
 // Productivity
 export { notionIntegration } from './notion/index.js';
@@ -135,6 +140,7 @@ export { salesforceIntegration } from './salesforce/index.js';
 export { pipedriveIntegration } from './pipedrive/index.js';
 export { gohighlevelIntegration } from './gohighlevel/index.js';
 export { closeIntegration } from './close/index.js';
+export { filevineIntegration } from './filevine/index.js';
 
 // Finance
 export { stripeIntegration } from './stripe/index.js';
