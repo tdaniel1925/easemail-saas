@@ -2,7 +2,7 @@ export interface Integration {
   id: string;
   name: string;
   description: string;
-  category: 'communication' | 'productivity' | 'crm' | 'legal' | 'voice' | 'finance' | 'developer' | 'ai';
+  category: 'communication' | 'productivity' | 'crm' | 'legal' | 'voice' | 'finance' | 'developer' | 'ai' | 'email';
   icon: string;
   color: string;
   authType: 'oauth2' | 'api_key';
@@ -222,6 +222,28 @@ export const integrations: Integration[] = [
     authType: 'api_key',
     status: 'coming_soon',
   },
+  {
+    id: 'autocalls',
+    name: 'Autocalls.ai',
+    description: 'AI voice calling platform - assistants, calls, leads, campaigns, SMS',
+    category: 'voice',
+    icon: 'PhoneCall',
+    color: '#10B981',
+    authType: 'api_key',
+    status: 'coming_soon',
+  },
+
+  // Email
+  {
+    id: 'resend',
+    name: 'Resend',
+    description: 'Email API for developers - transactional and marketing emails',
+    category: 'email',
+    icon: 'Send',
+    color: '#000000',
+    authType: 'api_key',
+    status: 'coming_soon',
+  },
 
   // Finance
   {
@@ -342,6 +364,7 @@ export const integrations: Integration[] = [
 
 export const categories = [
   { id: 'communication', name: 'Communication', icon: 'MessageSquare' },
+  { id: 'email', name: 'Email', icon: 'Mail' },
   { id: 'productivity', name: 'Productivity', icon: 'Briefcase' },
   { id: 'crm', name: 'CRM & Sales', icon: 'Target' },
   { id: 'legal', name: 'Legal', icon: 'Scale' },
