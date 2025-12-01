@@ -116,6 +116,21 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
     defaultMode: 'INCLUDED',
     suggestedPricePerUnit: 0.001,
   },
+  {
+    id: 'dialpad',
+    displayName: 'Dialpad',
+    description: 'Business phone system and contact center',
+    category: 'communication',
+    authType: 'oauth2',
+    iconUrl: '/icons/dialpad.svg',
+    docsUrl: 'https://developers.dialpad.com',
+    credentialFields: [
+      { key: 'clientId', label: 'Client ID', type: 'text', required: true },
+      { key: 'clientSecret', label: 'Client Secret', type: 'password', required: true },
+    ],
+    oauthScopes: ['calls', 'contacts', 'users'],
+    defaultMode: 'BYOK',
+  },
 
   // Email/Calendar
   {
@@ -147,6 +162,34 @@ export const INTEGRATION_CATALOG: IntegrationDefinition[] = [
       { key: 'tenantId', label: 'Tenant ID', type: 'text', required: false, placeholder: 'common' },
     ],
     oauthScopes: ['Mail.Read', 'Mail.Send', 'Calendars.ReadWrite', 'Contacts.Read'],
+    defaultMode: 'BYOK',
+  },
+  {
+    id: 'google_calendar',
+    displayName: 'Google Calendar',
+    description: 'Calendar scheduling and event management',
+    category: 'email',
+    authType: 'oauth2',
+    iconUrl: '/icons/google-calendar.svg',
+    docsUrl: 'https://developers.google.com/calendar',
+    credentialFields: [
+      { key: 'clientId', label: 'Client ID', type: 'text', required: true },
+      { key: 'clientSecret', label: 'Client Secret', type: 'password', required: true },
+    ],
+    oauthScopes: ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/calendar.events'],
+    defaultMode: 'BYOK',
+  },
+  {
+    id: 'cal_com',
+    displayName: 'Cal.com',
+    description: 'Open source scheduling and appointment booking',
+    category: 'email',
+    authType: 'api_key',
+    iconUrl: '/icons/cal-com.svg',
+    docsUrl: 'https://cal.com/docs/api-reference',
+    credentialFields: [
+      { key: 'apiKey', label: 'API Key', type: 'password', required: true, placeholder: 'cal_live_...' },
+    ],
     defaultMode: 'BYOK',
   },
 
