@@ -8,7 +8,7 @@ export interface IntegrationConfig {
   name: string;
   description: string;
   category: IntegrationCategory;
-  authType: 'oauth2' | 'api_key' | 'basic';
+  authType: 'oauth2' | 'oauth1' | 'api_key' | 'basic';
   scopes?: string[];
   requiredEnvVars: string[];
 }
@@ -21,7 +21,10 @@ export type IntegrationCategory =
   | 'communication'
   | 'crm'
   | 'voice'
-  | 'ai';
+  | 'ai'
+  | 'productivity'
+  | 'finance'
+  | 'developer';
 
 export interface IntegrationCredentials {
   integrationId: string;
