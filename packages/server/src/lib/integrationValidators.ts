@@ -345,6 +345,187 @@ export async function validateAirtable(credentials: Record<string, string>): Pro
 }
 
 /**
+ * Cal.com API Validator
+ */
+export async function validateCalCom(credentials: Record<string, string>): Promise<ValidationResult> {
+  const start = Date.now();
+  const apiKey = credentials.apiKey;
+
+  if (!apiKey) {
+    return { success: false, message: 'API key is required', errorCode: 'MISSING_CREDENTIALS' };
+  }
+
+  try {
+    const response = await fetch('https://api.cal.com/v1/me', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const latency = Date.now() - start;
+
+    if (response.ok) {
+      const data = await response.json() as { user?: { id: number; email: string; name: string } };
+      return {
+        success: true,
+        message: 'Cal.com connection successful',
+        latency,
+        details: {
+          accountInfo: {
+            userId: data.user?.id,
+            email: data.user?.email,
+            name: data.user?.name,
+          },
+        },
+      };
+    }
+
+    const error = await response.json() as { message?: string };
+    return {
+      success: false,
+      message: error.message || 'Invalid Cal.com API key',
+      latency,
+      errorCode: 'INVALID_CREDENTIALS',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Connection failed',
+      errorCode: 'CONNECTION_ERROR',
+    };
+  }
+}
+
+/**
+ * Google Calendar OAuth Validator
+ * Validates access token by fetching calendar list
+ */
+export async function validateGoogleCalendar(credentials: Record<string, string>): Promise<ValidationResult> {
+  const start = Date.now();
+  const accessToken = credentials.accessToken;
+
+  if (!accessToken) {
+    return { success: false, message: 'Access token is required', errorCode: 'MISSING_CREDENTIALS' };
+  }
+
+  try {
+    const response = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const latency = Date.now() - start;
+
+    if (response.ok) {
+      const data = await response.json() as { items?: Array<{ id: string; summary: string }> };
+      return {
+        success: true,
+        message: 'Google Calendar connection successful',
+        latency,
+        details: {
+          accountInfo: {
+            calendarsAvailable: data.items?.length || 0,
+            primaryCalendar: data.items?.[0]?.summary,
+          },
+        },
+      };
+    }
+
+    if (response.status === 401) {
+      return {
+        success: false,
+        message: 'Access token expired or invalid. Please reconnect.',
+        latency,
+        errorCode: 'TOKEN_EXPIRED',
+      };
+    }
+
+    const error = await response.json() as { error?: { message: string } };
+    return {
+      success: false,
+      message: error.error?.message || 'Google Calendar API error',
+      latency,
+      errorCode: 'API_ERROR',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Connection failed',
+      errorCode: 'CONNECTION_ERROR',
+    };
+  }
+}
+
+/**
+ * Dialpad OAuth Validator
+ * Validates access token by fetching user info
+ */
+export async function validateDialpad(credentials: Record<string, string>): Promise<ValidationResult> {
+  const start = Date.now();
+  const accessToken = credentials.accessToken;
+
+  if (!accessToken) {
+    return { success: false, message: 'Access token is required', errorCode: 'MISSING_CREDENTIALS' };
+  }
+
+  try {
+    const response = await fetch('https://dialpad.com/api/v2/users/me', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const latency = Date.now() - start;
+
+    if (response.ok) {
+      const data = await response.json() as { id?: string; email?: string; first_name?: string; last_name?: string };
+      return {
+        success: true,
+        message: 'Dialpad connection successful',
+        latency,
+        details: {
+          accountInfo: {
+            userId: data.id,
+            email: data.email,
+            name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+          },
+        },
+      };
+    }
+
+    if (response.status === 401) {
+      return {
+        success: false,
+        message: 'Access token expired or invalid. Please reconnect.',
+        latency,
+        errorCode: 'TOKEN_EXPIRED',
+      };
+    }
+
+    const error = await response.json() as { error?: string; message?: string };
+    return {
+      success: false,
+      message: error.message || error.error || 'Dialpad API error',
+      latency,
+      errorCode: 'API_ERROR',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Connection failed',
+      errorCode: 'CONNECTION_ERROR',
+    };
+  }
+}
+
+/**
  * Plaid API Validator
  */
 export async function validatePlaid(credentials: Record<string, string>): Promise<ValidationResult> {
@@ -456,6 +637,9 @@ const validators: Record<string, (credentials: Record<string, string>) => Promis
   stripe: validateStripe,
   airtable: validateAirtable,
   plaid: validatePlaid,
+  cal_com: validateCalCom,
+  google_calendar: validateGoogleCalendar,
+  dialpad: validateDialpad,
 };
 
 /**

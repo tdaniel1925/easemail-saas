@@ -27,6 +27,9 @@ import * as emailTools from './tools/emails.js';
 import * as calendarTools from './tools/calendar.js';
 import * as contactTools from './tools/contacts.js';
 import * as aiTools from './tools/ai.js';
+import * as googleCalendarTools from './tools/google-calendar.js';
+import * as calComTools from './tools/cal-com.js';
+import * as dialpadTools from './tools/dialpad.js';
 
 const app = express();
 const PORT = process.env.PORT || 3050;
@@ -125,6 +128,36 @@ const tools: Record<string, (params: any) => Promise<unknown>> = {
   summarize_thread: aiTools.summarizeThread,
   extract_action_items: aiTools.extractActionItems,
   smart_compose: aiTools.smartCompose,
+
+  // Google Calendar
+  gcal_list_calendars: googleCalendarTools.gcalListCalendars,
+  gcal_list_events: googleCalendarTools.gcalListEvents,
+  gcal_create_event: googleCalendarTools.gcalCreateEvent,
+  gcal_update_event: googleCalendarTools.gcalUpdateEvent,
+  gcal_delete_event: googleCalendarTools.gcalDeleteEvent,
+  gcal_get_freebusy: googleCalendarTools.gcalGetFreeBusy,
+
+  // Cal.com
+  calcom_list_event_types: calComTools.calcomListEventTypes,
+  calcom_list_bookings: calComTools.calcomListBookings,
+  calcom_get_booking: calComTools.calcomGetBooking,
+  calcom_cancel_booking: calComTools.calcomCancelBooking,
+  calcom_get_availability: calComTools.calcomGetAvailability,
+  calcom_create_booking: calComTools.calcomCreateBooking,
+  calcom_reschedule_booking: calComTools.calcomRescheduleBooking,
+  calcom_list_schedules: calComTools.calcomListSchedules,
+
+  // Dialpad
+  dialpad_list_calls: dialpadTools.dialpadListCalls,
+  dialpad_get_call: dialpadTools.dialpadGetCall,
+  dialpad_list_contacts: dialpadTools.dialpadListContacts,
+  dialpad_create_contact: dialpadTools.dialpadCreateContact,
+  dialpad_search_contacts: dialpadTools.dialpadSearchContacts,
+  dialpad_list_users: dialpadTools.dialpadListUsers,
+  dialpad_get_user: dialpadTools.dialpadGetUser,
+  dialpad_list_recordings: dialpadTools.dialpadListRecordings,
+  dialpad_get_call_stats: dialpadTools.dialpadGetCallStats,
+  dialpad_send_sms: dialpadTools.dialpadSendSms,
 };
 
 // ===========================================
@@ -179,6 +212,36 @@ app.get('/tools', (req, res) => {
     { name: 'summarize_thread', category: 'ai', description: 'AI summarizes email thread' },
     { name: 'extract_action_items', category: 'ai', description: 'AI extracts action items' },
     { name: 'smart_compose', category: 'ai', description: 'AI composes email from prompt' },
+
+    // Google Calendar
+    { name: 'gcal_list_calendars', category: 'google_calendar', description: 'List Google calendars' },
+    { name: 'gcal_list_events', category: 'google_calendar', description: 'List Google Calendar events' },
+    { name: 'gcal_create_event', category: 'google_calendar', description: 'Create Google Calendar event' },
+    { name: 'gcal_update_event', category: 'google_calendar', description: 'Update Google Calendar event' },
+    { name: 'gcal_delete_event', category: 'google_calendar', description: 'Delete Google Calendar event' },
+    { name: 'gcal_get_freebusy', category: 'google_calendar', description: 'Check free/busy times' },
+
+    // Cal.com
+    { name: 'calcom_list_event_types', category: 'cal_com', description: 'List Cal.com event types' },
+    { name: 'calcom_list_bookings', category: 'cal_com', description: 'List Cal.com bookings' },
+    { name: 'calcom_get_booking', category: 'cal_com', description: 'Get Cal.com booking details' },
+    { name: 'calcom_cancel_booking', category: 'cal_com', description: 'Cancel a Cal.com booking' },
+    { name: 'calcom_get_availability', category: 'cal_com', description: 'Get availability slots' },
+    { name: 'calcom_create_booking', category: 'cal_com', description: 'Create a Cal.com booking' },
+    { name: 'calcom_reschedule_booking', category: 'cal_com', description: 'Reschedule a booking' },
+    { name: 'calcom_list_schedules', category: 'cal_com', description: 'List availability schedules' },
+
+    // Dialpad
+    { name: 'dialpad_list_calls', category: 'dialpad', description: 'List Dialpad calls' },
+    { name: 'dialpad_get_call', category: 'dialpad', description: 'Get call details' },
+    { name: 'dialpad_list_contacts', category: 'dialpad', description: 'List Dialpad contacts' },
+    { name: 'dialpad_create_contact', category: 'dialpad', description: 'Create Dialpad contact' },
+    { name: 'dialpad_search_contacts', category: 'dialpad', description: 'Search Dialpad contacts' },
+    { name: 'dialpad_list_users', category: 'dialpad', description: 'List Dialpad users' },
+    { name: 'dialpad_get_user', category: 'dialpad', description: 'Get Dialpad user details' },
+    { name: 'dialpad_list_recordings', category: 'dialpad', description: 'List call recordings' },
+    { name: 'dialpad_get_call_stats', category: 'dialpad', description: 'Get call statistics' },
+    { name: 'dialpad_send_sms', category: 'dialpad', description: 'Send SMS via Dialpad' },
   ];
 
   res.json({ tools: toolList });
@@ -202,7 +265,11 @@ app.post('/call', async (req, res) => {
     const tenantId = req.tenantId || params?.tenant_id;
     if (tenantId) {
       // Determine integration from tool name
-      const integrationId = tool.startsWith('msgraph_') ? 'msgraph' : 'nylas';
+      let integrationId = 'nylas';
+      if (tool.startsWith('msgraph_')) integrationId = 'msgraph';
+      else if (tool.startsWith('gcal_')) integrationId = 'google_calendar';
+      else if (tool.startsWith('calcom_')) integrationId = 'cal_com';
+      else if (tool.startsWith('dialpad_')) integrationId = 'dialpad';
 
       // Track general usage
       trackUsageAsync({ tenantId, integrationId, tool });
