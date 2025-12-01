@@ -6,7 +6,7 @@
 import { db } from './db.js';
 
 // ===========================================
-// TRACK USAGE
+// TRACK USAGE (General)
 // ===========================================
 
 export async function trackUsage(params: {
@@ -56,6 +56,130 @@ export function trackUsageAsync(params: {
   count?: number;
 }): void {
   trackUsage(params).catch(() => {});
+}
+
+// ===========================================
+// PLATFORM USAGE TRACKING (For INCLUDED integrations)
+// Tracks usage with cost for rebilling to customers
+// ===========================================
+
+export interface PlatformUsageParams {
+  tenantId: string;
+  integrationId: string;
+  operation: string;
+  units?: number;
+  cost?: number;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Track platform usage for INCLUDED integrations
+ * This records detailed usage for cost calculation and rebilling
+ */
+export async function trackPlatformUsage(params: PlatformUsageParams): Promise<void> {
+  const { tenantId, integrationId, operation, units = 1, cost, metadata } = params;
+
+  try {
+    // Check if this integration is INCLUDED (platform-paid)
+    const config = await db.integrationConfig.findUnique({
+      where: { integrationId },
+      select: { mode: true, basePricePerUnit: true },
+    });
+
+    // Only track platform usage for INCLUDED integrations
+    if (config?.mode !== 'INCLUDED') {
+      return;
+    }
+
+    // Calculate cost if not provided
+    const calculatedCost = cost ?? (config.basePricePerUnit ? units * config.basePricePerUnit : 0);
+
+    // Record platform usage
+    await db.platformUsage.create({
+      data: {
+        tenantId,
+        integrationId,
+        operation,
+        units,
+        cost: calculatedCost,
+        metadata: metadata ? JSON.parse(JSON.stringify(metadata)) : undefined,
+      },
+    });
+
+    // Also track in general usage for consistency
+    await trackUsage({
+      tenantId,
+      integrationId,
+      tool: operation,
+      count: 1,
+    });
+  } catch (error) {
+    console.error('Failed to track platform usage:', error);
+  }
+}
+
+/**
+ * Fire and forget version of platform usage tracking
+ */
+export function trackPlatformUsageAsync(params: PlatformUsageParams): void {
+  trackPlatformUsage(params).catch(() => {});
+}
+
+/**
+ * Get the integration mode for a given integration
+ * Returns the mode from config or catalog default
+ */
+export async function getIntegrationMode(integrationId: string): Promise<'INCLUDED' | 'BYOK' | 'DISABLED'> {
+  const config = await db.integrationConfig.findUnique({
+    where: { integrationId },
+    select: { mode: true },
+  });
+
+  return config?.mode || 'DISABLED';
+}
+
+/**
+ * Check if integration is available for a tenant
+ * For INCLUDED: always available
+ * For BYOK: check if tenant has a connection
+ * For DISABLED: not available
+ */
+export async function isIntegrationAvailable(
+  tenantId: string,
+  integrationId: string
+): Promise<{ available: boolean; mode: string; reason?: string }> {
+  const config = await db.integrationConfig.findUnique({
+    where: { integrationId },
+    select: { mode: true, credentialsEncrypted: true },
+  });
+
+  if (!config || config.mode === 'DISABLED') {
+    return { available: false, mode: 'DISABLED', reason: 'Integration is disabled' };
+  }
+
+  if (config.mode === 'INCLUDED') {
+    // Check if platform has credentials configured
+    if (!config.credentialsEncrypted) {
+      return { available: false, mode: 'INCLUDED', reason: 'Platform credentials not configured' };
+    }
+    return { available: true, mode: 'INCLUDED' };
+  }
+
+  // BYOK - check if tenant has a connection
+  const connection = await db.connection.findFirst({
+    where: {
+      tenantId,
+      integrationId,
+      isActive: true,
+      status: 'active',
+    },
+  });
+
+  if (!connection) {
+    return { available: false, mode: 'BYOK', reason: 'No connection configured' };
+  }
+
+  return { available: true, mode: 'BYOK' };
 }
 
 // ===========================================

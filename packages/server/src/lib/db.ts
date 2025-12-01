@@ -4,11 +4,24 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-export const db = globalForPrisma.prisma ?? new PrismaClient();
+// Optimized Prisma client for serverless/Railway environments
+// Uses connection pooling settings tuned for Supabase
+export const db = globalForPrisma.prisma ?? new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = db;
-}
+// Always cache in global for Railway/serverless to prevent connection exhaustion
+globalForPrisma.prisma = db;
+
+// Graceful shutdown handler
+process.on('beforeExit', async () => {
+  await db.$disconnect();
+});
 
 // Helper to get tenant by slug - auto-creates if doesn't exist
 export async function getTenant(tenantId: string) {

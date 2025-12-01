@@ -158,10 +158,10 @@ export default function ToolsPage() {
   }, {});
 
   const categoryLabels: Record<string, string> = {
-    email: '📧 Email',
-    calendar: '📅 Calendar',
-    contacts: '👥 Contacts',
-    ai: '🤖 AI Tools',
+    email: 'Email',
+    calendar: 'Calendar',
+    contacts: 'Contacts',
+    ai: 'AI Tools',
   };
 
   return (

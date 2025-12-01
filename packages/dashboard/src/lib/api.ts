@@ -170,6 +170,199 @@ class ApiClient {
       isOverLimit: boolean;
     }>(`/api-keys/${tenantId}/billing`);
   }
+
+  // Admin - Integration Configuration
+  async getAdminIntegrations() {
+    return this.request<{
+      success: boolean;
+      integrations: Array<{
+        id: string;
+        displayName: string;
+        description: string;
+        category: string;
+        authType: string;
+        iconUrl?: string;
+        docsUrl?: string;
+        credentialFields: Array<{
+          key: string;
+          label: string;
+          type: string;
+          required: boolean;
+          placeholder?: string;
+        }>;
+        mode: 'INCLUDED' | 'BYOK' | 'DISABLED';
+        hasCredentials: boolean;
+        maskedCredentials: Record<string, string> | null;
+        markupPercent: number;
+        basePricePerUnit?: number;
+        isActive: boolean;
+        updatedAt?: string;
+      }>;
+      byCategory: Record<string, any[]>;
+      categories: Array<{ id: string; name: string; icon: string }>;
+    }>('/admin/integrations');
+  }
+
+  async getAdminIntegration(integrationId: string) {
+    return this.request<{
+      success: boolean;
+      integration: any;
+    }>(`/admin/integrations/${integrationId}`);
+  }
+
+  async updateAdminIntegration(
+    integrationId: string,
+    data: {
+      mode?: 'INCLUDED' | 'BYOK' | 'DISABLED';
+      credentials?: Record<string, string>;
+      markupPercent?: number;
+      basePricePerUnit?: number;
+      setupInstructions?: string;
+      isActive?: boolean;
+    }
+  ) {
+    return this.request<{ success: boolean; message: string; integration: any }>(
+      `/admin/integrations/${integrationId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async testAdminIntegration(integrationId: string) {
+    return this.request<{ success: boolean; message: string }>(
+      `/admin/integrations/${integrationId}/test`,
+      { method: 'POST' }
+    );
+  }
+
+  async deleteAdminIntegrationCredentials(integrationId: string) {
+    return this.request<{ success: boolean; message: string }>(
+      `/admin/integrations/${integrationId}/credentials`,
+      { method: 'DELETE' }
+    );
+  }
+
+  async getAdminUsageSummary(period?: string) {
+    const params = period ? { period } : undefined;
+    return this.request<{
+      success: boolean;
+      period: string;
+      summary: Array<{
+        integrationId: string;
+        displayName: string;
+        totalUnits: number;
+        totalCost: number;
+        callCount: number;
+        markupPercent: number;
+        revenue: number;
+      }>;
+      totals: {
+        totalCost: number;
+        totalRevenue: number;
+        totalCalls: number;
+      };
+    }>('/admin/integrations/usage/summary', { params });
+  }
+
+  // Customer Connections
+  async getConnections(tenantId: string) {
+    return this.request<{
+      success: boolean;
+      integrations: Array<{
+        id: string;
+        displayName: string;
+        description: string;
+        category: string;
+        iconUrl?: string;
+        docsUrl?: string;
+        mode: 'INCLUDED' | 'BYOK';
+        authType: string;
+        isConnected: boolean;
+        connection: {
+          id: string;
+          name: string;
+          accountEmail?: string;
+          accountName?: string;
+          status: string;
+          lastUsedAt?: string;
+          createdAt: string;
+        } | null;
+        credentialFields?: Array<{
+          key: string;
+          label: string;
+          type: string;
+          required: boolean;
+          placeholder?: string;
+        }>;
+        setupInstructions?: string;
+      }>;
+      byCategory: Record<string, any[]>;
+      stats: {
+        total: number;
+        connected: number;
+        included: number;
+        byok: number;
+      };
+      categories: Array<{ id: string; name: string; icon: string; description: string }>;
+    }>(`/connections/${tenantId}`);
+  }
+
+  async createConnection(
+    tenantId: string,
+    integrationId: string,
+    data: { name?: string; credentials?: Record<string, string>; accountEmail?: string }
+  ) {
+    return this.request<{ success: boolean; message: string; connection: any }>(
+      `/connections/${tenantId}/${integrationId}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async updateConnection(
+    tenantId: string,
+    integrationId: string,
+    connectionId: string,
+    data: { name?: string; credentials?: Record<string, string> }
+  ) {
+    return this.request<{ success: boolean; message: string; connection: any }>(
+      `/connections/${tenantId}/${integrationId}/${connectionId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  async deleteConnection(tenantId: string, integrationId: string, connectionId: string) {
+    return this.request<{ success: boolean; message: string }>(
+      `/connections/${tenantId}/${integrationId}/${connectionId}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  async getConnectionUsage(tenantId: string, period?: string) {
+    const params = period ? { period } : undefined;
+    return this.request<{
+      success: boolean;
+      period: string;
+      usage: Array<{
+        integrationId: string;
+        displayName: string;
+        units: number;
+        callCount: number;
+        estimatedCost: number;
+      }>;
+      total: {
+        estimatedCost: number;
+        totalCalls: number;
+      };
+    }>(`/connections/${tenantId}/usage`, { params });
+  }
 }
 
 export const api = new ApiClient(API_URL);

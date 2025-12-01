@@ -295,3 +295,104 @@ model CalendarEvent {
   @@index([tenantId, startTime])
   @@index([tenantId, endTime])
 }
+
+// ============================================
+// INTEGRATION CONFIGURATION
+// Platform-level settings for each integration
+// Controls whether admin provides keys (INCLUDED)
+// or customers bring their own (BYOK)
+// ============================================
+
+enum IntegrationMode {
+  INCLUDED  // Platform provides API key, rebills customers
+  BYOK      // Bring Your Own Key - customer provides their key
+  DISABLED  // Integration not available
+}
+
+model IntegrationConfig {
+  id                   String          @id @default(cuid())
+  integrationId        String          @unique // "openai", "twilio", "nylas", etc.
+  displayName          String          // "OpenAI" - shown in UI
+  description          String?         // "AI text generation and chat"
+  category             String          // "ai", "communication", "email", "crm", "finance"
+  mode                 IntegrationMode @default(DISABLED)
+
+  // Platform credentials (encrypted) - used when mode = INCLUDED
+  credentialsEncrypted String?         @db.Text
+
+  // OAuth configuration (for integrations that use OAuth)
+  authType             String          @default("api_key") // "api_key", "oauth2"
+  oauthClientId        String?
+  oauthClientSecret    String?         @db.Text
+  oauthScopes          String[]        @default([])
+
+  // Billing settings for INCLUDED mode
+  markupPercent        Float           @default(0) // % markup on usage
+  basePricePerUnit     Float?          // Base price per API call/unit
+
+  // UI configuration
+  iconUrl              String?         // Icon for the integration
+  docsUrl              String?         // Link to docs
+  setupInstructions    String?         @db.Text // Help text for customers
+
+  // Status
+  isActive             Boolean         @default(true)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+}
+
+// ============================================
+// PLATFORM USAGE
+// Track usage for INCLUDED integrations (rebilling)
+// ============================================
+
+model PlatformUsage {
+  id            String   @id @default(cuid())
+  tenantId      String
+  integrationId String   // "openai", "twilio", etc.
+  operation     String   // "chat_completion", "send_sms", etc.
+  units         Float    @default(1) // Number of units (tokens, messages, etc.)
+  cost          Float?   // Actual cost from provider
+  metadata      Json?    // Extra data (model used, duration, etc.)
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId, integrationId])
+  @@index([tenantId, createdAt])
+  @@index([integrationId, createdAt])
+}
+
+// ============================================
+// CONNECTION (Customer's active integrations)
+// Replaces/extends IntegrationCredential for BYOK
+// ============================================
+
+model Connection {
+  id                   String    @id @default(cuid())
+  tenantId             String
+  integrationId        String    // "filevine", "plaid", etc.
+  name                 String    // "My Filevine Account"
+
+  // Credentials (encrypted)
+  credentialsEncrypted String?   @db.Text // For API key integrations
+  accessToken          String?   @db.Text // For OAuth
+  refreshToken         String?   @db.Text // For OAuth
+  tokenExpiresAt       DateTime?
+
+  // Account info
+  accountEmail         String?   // Associated email/username
+  accountId            String?   // External account ID
+  accountName          String?   // Display name from provider
+
+  // Status
+  status               String    @default("active") // "active", "expired", "error"
+  lastUsedAt           DateTime?
+  lastError            String?
+
+  isActive             Boolean   @default(true)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@unique([tenantId, integrationId, accountEmail])
+  @@index([tenantId, integrationId])
+  @@index([tenantId, isActive])
+}

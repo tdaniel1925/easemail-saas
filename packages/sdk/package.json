@@ -1,0 +1,62 @@
+{
+  "name": "@botmakers/sdk",
+  "version": "1.0.0",
+  "description": "Official SDK for BotMakers MCP Server - easily integrate email, calendar, contacts, and AI tools",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "botmakers",
+    "mcp",
+    "email",
+    "calendar",
+    "contacts",
+    "ai",
+    "sdk",
+    "api"
+  ],
+  "author": "BotMakers",
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.6.3"
+  },
+  "peerDependencies": {
+    "typescript": ">=4.7.0"
+  },
+  "peerDependenciesMeta": {
+    "typescript": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/botmakers/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/botmakers/mcp-server/issues"
+  },
+  "homepage": "https://docs.botmakers.dev/sdk"
+}

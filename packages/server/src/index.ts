@@ -9,6 +9,8 @@ import apiKeyRoutes from './routes/apiKeys.js';
 import folderRoutes from './routes/folders.js';
 import contactRoutes from './routes/contacts.js';
 import calendarRoutes from './routes/calendar.js';
+import adminIntegrationsRoutes from './routes/admin/integrations.js';
+import connectionsRoutes from './routes/connections.js';
 
 // Import integrations
 import { integrationRegistry } from './integrations/index.js';
@@ -18,7 +20,7 @@ import { optionalApiKey } from './middleware/auth.js';
 import { rateLimit } from './middleware/rateLimit.js';
 
 // Import usage tracking
-import { trackUsageAsync } from './lib/usage.js';
+import { trackUsageAsync, trackPlatformUsageAsync } from './lib/usage.js';
 
 // Import tools
 import * as emailTools from './tools/emails.js';
@@ -67,6 +69,16 @@ app.use('/contacts-sync', contactRoutes);
 // CALENDAR SYNC ROUTES
 // ===========================================
 app.use('/calendar-sync', calendarRoutes);
+
+// ===========================================
+// ADMIN ROUTES (Platform Configuration)
+// ===========================================
+app.use('/admin/integrations', adminIntegrationsRoutes);
+
+// ===========================================
+// CUSTOMER CONNECTIONS ROUTES (BYOK)
+// ===========================================
+app.use('/connections', connectionsRoutes);
 
 // ===========================================
 // TOOL REGISTRY
@@ -190,8 +202,19 @@ app.post('/call', async (req, res) => {
     const tenantId = req.tenantId || params?.tenant_id;
     if (tenantId) {
       // Determine integration from tool name
-      const integration = tool.startsWith('msgraph_') ? 'msgraph' : 'nylas';
-      trackUsageAsync({ tenantId, integrationId: integration, tool });
+      const integrationId = tool.startsWith('msgraph_') ? 'msgraph' : 'nylas';
+
+      // Track general usage
+      trackUsageAsync({ tenantId, integrationId, tool });
+
+      // Track platform usage for INCLUDED integrations (with cost calculation)
+      trackPlatformUsageAsync({
+        tenantId,
+        integrationId,
+        operation: tool,
+        units: 1,
+        metadata: { tool, timestamp: new Date().toISOString() },
+      });
     }
 
     res.json(result);
@@ -291,19 +314,22 @@ async function startServer() {
 ║  Health:       /health                                    ║
 ║  Tools:        /tools                                     ║
 ║                                                           ║
+║  Admin (Platform Configuration):                          ║
+║  - Integrations:   /admin/integrations                    ║
+║  - Usage:          /admin/integrations/usage/summary      ║
+║                                                           ║
+║  Customer Connections (BYOK):                             ║
+║  - List:       /connections/:tenantId                     ║
+║  - Connect:    /connections/:tenantId/:integrationId      ║
+║  - Usage:      /connections/:tenantId/usage               ║
+║                                                           ║
 ║  Nylas OAuth (Email/Calendar/Contacts):                   ║
 ║  - Connect:    /auth/connect/:tenantId                    ║
 ║  - Status:     /auth/status/:tenantId                     ║
 ║                                                           ║
-║  Multi-Integration OAuth:                                 ║
-║  - List:       /integrations                              ║
-║  - Connect:    /integrations/:id/connect/:tenant          ║
-║  - Status:     /integrations/:id/status/:tenant           ║
-║                                                           ║
 ║  API Keys & Usage:                                        ║
 ║  - Keys:       /api-keys/:tenant                          ║
 ║  - Usage:      /api-keys/:tenant/usage                    ║
-║  - Billing:    /api-keys/:tenant/billing                  ║
 ╚═══════════════════════════════════════════════════════════╝
     `);
   });

@@ -5,6 +5,31 @@ import 'dotenv/config';
 
 const router = Router();
 
+// Simple in-memory cache for status checks (reduces DB load)
+const statusCache = new Map<string, { data: unknown; timestamp: number }>();
+const CACHE_TTL_MS = 5000; // 5 seconds cache
+
+function getCachedStatus(tenantId: string): unknown | null {
+  const cached = statusCache.get(tenantId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedStatus(tenantId: string, data: unknown): void {
+  statusCache.set(tenantId, { data, timestamp: Date.now() });
+  // Clean old entries periodically
+  if (statusCache.size > 1000) {
+    const now = Date.now();
+    for (const [key, value] of statusCache.entries()) {
+      if (now - value.timestamp > CACHE_TTL_MS * 2) {
+        statusCache.delete(key);
+      }
+    }
+  }
+}
+
 // ===========================================
 // HTML PAGE TEMPLATES
 // ===========================================
@@ -368,38 +393,70 @@ router.get('/callback', async (req, res) => {
 // ===========================================
 // GET /auth/status/:tenantId
 // Check connection status (returns all accounts)
+// Uses caching to reduce database load from frequent polling
 // ===========================================
 router.get('/status/:tenantId', async (req, res) => {
   try {
     const { tenantId } = req.params;
-    const tenant = await getOrCreateTenant(tenantId);
 
-    // Get all active accounts
-    const accounts = await db.account.findMany({
-      where: { tenantId: tenant.id, isActive: true },
-      select: {
-        id: true,
-        email: true,
-        provider: true,
-        isPrimary: true,
-        createdAt: true,
-      },
-      orderBy: [
-        { isPrimary: 'desc' },
-        { createdAt: 'asc' },
-      ],
+    // Check cache first (5 second TTL)
+    const cached = getCachedStatus(tenantId);
+    if (cached) {
+      return res.json(cached);
+    }
+
+    // Use Promise.race with timeout to prevent hanging requests
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database query timeout')), 4000);
     });
 
-    res.json({
-      connected: accounts.length > 0,
-      accounts: accounts,
-      // Legacy fields for backward compatibility
-      email: accounts.find(a => a.isPrimary)?.email || accounts[0]?.email || null,
-      provider: accounts.find(a => a.isPrimary)?.provider || accounts[0]?.provider || null,
-    });
+    const queryPromise = (async () => {
+      const tenant = await getOrCreateTenant(tenantId);
+
+      // Get all active accounts
+      const accounts = await db.account.findMany({
+        where: { tenantId: tenant.id, isActive: true },
+        select: {
+          id: true,
+          email: true,
+          provider: true,
+          isPrimary: true,
+          createdAt: true,
+        },
+        orderBy: [
+          { isPrimary: 'desc' },
+          { createdAt: 'asc' },
+        ],
+      });
+
+      return {
+        connected: accounts.length > 0,
+        accounts: accounts,
+        // Legacy fields for backward compatibility
+        email: accounts.find(a => a.isPrimary)?.email || accounts[0]?.email || null,
+        provider: accounts.find(a => a.isPrimary)?.provider || accounts[0]?.provider || null,
+      };
+    })();
+
+    const result = await Promise.race([queryPromise, timeoutPromise]);
+
+    // Cache the successful result
+    setCachedStatus(tenantId, result);
+
+    res.json(result);
   } catch (error) {
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Failed to get status',
+    // On error, return a minimal response instead of 500
+    // This prevents frontend from retrying aggressively
+    const errorMessage = error instanceof Error ? error.message : 'Failed to get status';
+    console.error('Auth status error:', errorMessage);
+
+    res.status(503).json({
+      connected: false,
+      accounts: [],
+      email: null,
+      provider: null,
+      error: errorMessage,
+      retryAfter: 5, // Suggest retry after 5 seconds
     });
   }
 });
